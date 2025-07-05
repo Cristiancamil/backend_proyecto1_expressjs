@@ -1,6 +1,8 @@
 require('dotenv').config()
 const express = require('express')
 
+const LoggerMiddleware = require('./middlewares/logger')
+const errorHandler = require('./middlewares/errorHandler')
 const { validateUser } = require('./utils/validation')
 
 const fs = require('fs')
@@ -10,6 +12,8 @@ const usersFilePath = path.join(__dirname, 'users.json')
 const app = express()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use(LoggerMiddleware)
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3000
 
@@ -129,10 +133,21 @@ app.delete('/users/:id', (req, res) => {
   const userId = req.params
   fs.readFile(usersFilePath, 'utf-8', (err, data) => {
     if (err) {
-      return res.status(500).json({ error: 'Error con conexión de datos.'})
+      return res.status(500).json({ error: 'Error con conexión de datos.' })
     }
     let users = JSON.parse(data)
+    users = users.filter(user => user.id !== userId)
+    fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error al eliminar el usuario.' })
+      }
+      res.status(204).send()
+    })
   })
+})
+
+app.get('/error', (req, res, next) => {
+  next(new Error('Error intencional'))
 })
 
 app.listen(PORT, () => {
