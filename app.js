@@ -1,22 +1,34 @@
+// Importaciones de módulos básicos
 require('dotenv').config()
 const express = require('express')
+const { PrismaClient, Prisma } = require('@prisma/client')
+const prisma = new PrismaClient()
 
+// Middlewares
 const LoggerMiddleware = require('./middlewares/logger')
 const errorHandler = require('./middlewares/errorHandler')
+
+// Validaciones
 const { validateUser } = require('./utils/validation')
 
+// Importaciones de librerías
 const fs = require('fs')
 const path = require('path')
+
+// Obteniendo ruta de archivos
 const usersFilePath = path.join(__dirname, 'users.json')
 
+// Creando la App
 const app = express()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(LoggerMiddleware)
 app.use(errorHandler)
 
+// Configiración del puerto
 const PORT = process.env.PORT || 3000
 
+// Defiendo rutas
 app.get('/', (req, res) => {
   res.send(`
     <h1>Curso Express.js V2</h1>
@@ -150,6 +162,16 @@ app.get('/error', (req, res, next) => {
   next(new Error('Error intencional'))
 })
 
+app.get('/db-users', async(req, res) => {
+  try {
+    const users = await prisma.users.findMany()
+    res.json(users)
+  } catch (error) {
+    res.status(500).json({ error: 'Error alcomunicarse con la base de datos' })
+  }
+})
+
+// Creando el log inicial
 app.listen(PORT, () => {
   console.log(`Servidor: http://localhost:${PORT}`)   
 })
