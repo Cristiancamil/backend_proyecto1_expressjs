@@ -16,8 +16,10 @@ const prisma = new PrismaClient()
 // Se importan middlewares personalizados:
 // - LoggerMiddleware: registra información de cada solicitud entrante.
 // - errorHandler: captura y maneja errores de forma centralizada.
+// - authenticateToken: valida que el token JWT del usuario sea valido para acceder a rutas protegidas.
 const LoggerMiddleware = require('./middlewares/logger')
 const errorHandler = require('./middlewares/errorHandler')
+const authenticateToken = require('./middlewares/auth')
 
 // ======================
 // VALIDACIONES DE DATOS
@@ -371,6 +373,22 @@ app.get('/db-users', async(req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Error al comunicarse con la base de datos' })
   }
+})
+
+/**
+ * Ruta protegida de prueba
+ * 
+ * Esta ruta solo es accesible si el usuario incluye un token JWT válido
+ * en el encabezado `Authorization: Bearer <token>`.
+ * 
+ * El middleware `authenticateToken` se encarga de verificar el token.
+ * Si es válido, permite el acceso a esta ruta.
+ * 
+ * @route GET /protected-route
+ * @access Privado (requiere token)
+*/
+app.get('/protected-route', authenticateToken, (req, res) => {
+  res.send('Esta es una ruta protegida')
 })
 
 // =======================
