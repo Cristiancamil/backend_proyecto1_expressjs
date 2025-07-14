@@ -8,6 +8,7 @@
 require('dotenv').config()
 const express = require('express')
 const { PrismaClient } = require('@prisma/client')
+const bcrypt = require('bcryptjs')
 const prisma = new PrismaClient()
 
 // =================
@@ -389,6 +390,39 @@ app.get('/db-users', async(req, res) => {
 */
 app.get('/protected-route', authenticateToken, (req, res) => {
   res.send('Esta es una ruta protegida')
+})
+
+/**
+ * Ruta para registrar un nuevo usuario.
+ * 
+ * - Recibe `email`, `password` y `name` desde el cuerpo de la solicitud (`req.body`).
+ * - Encripta la contraseña usando bcrypt antes de guardarla.
+ * - Crea un nuevo usuario en la base de datos con rol predeterminado 'USER'.
+ * 
+ * Respuestas:
+ * - 201: Usuario creado exitosamente.
+ * - 500: Error interno si falla la operación en la base de datos.
+ * 
+ * @route POST /register
+ * @access Público
+ */
+app.post('/register', async (req, res) => {
+  const { email, password, name } = req.body
+  const hashedPassword = await bcrypt.hash(password, 10)
+  
+  const newUser = await prisma.users.create({
+    data: {
+      email,
+      password: hashedPassword,
+      name,
+      role: 'USER'
+    }
+  })
+
+  res.status(201).json({ 
+    message: 'Usuario creado con exito',
+    user: newUser
+  })
 })
 
 // =======================
